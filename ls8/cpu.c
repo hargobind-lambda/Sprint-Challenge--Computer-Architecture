@@ -5,8 +5,8 @@
 void handle_CMP(struct cpu *cpu)
 {
   unsigned char regA, regB;
-  regA = cpu_ram_pc(cpu);
-  regB = cpu_ram_read(cpu, cpu->pc + 1);
+  regA = cpu_register_read(cpu, cpu_ram_pc(cpu));
+  regB = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc + 1));
   if (regA == regB)
   {
     // regB is equal to regB
@@ -27,35 +27,39 @@ void handle_CMP(struct cpu *cpu)
 
 void handle_JEQ(struct cpu *cpu)
 {
+  unsigned char jmp_address = cpu_register_read(cpu, cpu_ram_pc(cpu));
   if (cpu->FL == CMP_E_MASK)
   {
 #ifdef DEBUG
-    printf("Was equal. Jumping to: %u\n", cpu_ram_pc(cpu));
+    printf("JEQ Was equal. Jumping to: %u\n", jmp_address);
 #endif
-    cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
+    cpu->pc = jmp_address;
   }
   else
   {
 #ifdef DEBUG
-    printf("Was not equal. Continuing to: %u", cpu->pc + 2);
+    printf("JEQ Was not equal. Continuing to: %u", cpu->pc + 1);
 #endif
+  cpu->pc += 1;
   }
 }
 
 void handle_JNE(struct cpu *cpu)
 {
-  if (cpu->FL & CMP_E_MASK == 0)
+  unsigned char jmp_address = cpu_register_read(cpu, cpu_ram_pc(cpu));
+  if ((cpu->FL & CMP_E_MASK) == 0)
   {
 #ifdef DEBUG
-    printf("Was not equal. Jumping to: %u\n", cpu_ram_pc(cpu));
+    printf("JNE Was not equal. Jumping to: %u\n", cpu_ram_pc(cpu));
 #endif
-    cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
+    cpu->pc = jmp_address;
   }
   else
   {
 #ifdef DEBUG
-    printf("Was equal. Continuing to: %u", cpu->pc + 2);
+    printf("JNE Was equal. Continuing to: %u", cpu->pc + 1);
 #endif
+  cpu->pc += 1;
   }
 }
 
@@ -67,6 +71,9 @@ void handle_JMP(struct cpu *cpu)
 #endif
   cpu->pc = jmp_address;
 }
+
+
+
 
 void handle_LDI(struct cpu *cpu)
 {
@@ -212,7 +219,7 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
 #ifdef DEBUG
 void cpu_print_state(struct cpu *cpu)
 {
-  printf("\ncpu->pc: 0x%02x op: %3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
+  printf("\ncpu->pc: %03u op: %3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
   for (int i = 0; i < 8; i++)
   {
     printf("%3u ", cpu->reg[i]);
