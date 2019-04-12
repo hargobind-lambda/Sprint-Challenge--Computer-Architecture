@@ -10,15 +10,15 @@ void handle_CMP(struct cpu *cpu)
   if (regA == regB)
   {
     // regB is equal to regB
-    cpu->FL = cpu->FL & CMP_E_MASK;
-  }
-  else if (regA < regB)
-  {
-    cpu->FL = cpu->FL & CMP_L_MASK;
+    cpu->FL = 1;//cpu->FL & CMP_E_MASK;
   }
   else if (regA > regB)
   {
-    cpu->FL = cpu->FL & CMP_G_MASK;
+    cpu->FL = 2;//cpu->FL & CMP_G_MASK;
+  }
+  else if (regA < regB)
+  {
+    cpu->FL = 4;//cpu->FL & CMP_L_MASK;
   }
 #ifdef DEBUG
   printf("based on regA: %u and regB %u the cmp is set to %u\n", regA, regB, cpu->FL);
@@ -50,7 +50,7 @@ void handle_JNE(struct cpu *cpu)
   if ((cpu->FL & CMP_E_MASK) == 0)
   {
 #ifdef DEBUG
-    printf("JNE Was not equal. Jumping to: %u\n", cpu_ram_pc(cpu));
+    printf("JNE Was not equal. Jumping to: %u\n", jmp_address);
 #endif
     cpu->pc = jmp_address;
   }
@@ -213,13 +213,16 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
     result = cpu_register_read(cpu, regA) + cpu_register_read(cpu, regB);
     cpu_register_write(cpu, regA, result);
     break;
+  
+  case ALU_CMP:
+    break;
   }
 }
 
 #ifdef DEBUG
 void cpu_print_state(struct cpu *cpu)
 {
-  printf("\ncpu->pc: %03u op: %3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
+  printf("\ncpu->pc: %03u op: %3u, registers: [ ", cpu->pc+1, cpu->ram[cpu->pc]);
   for (int i = 0; i < 8; i++)
   {
     printf("%3u ", cpu->reg[i]);
