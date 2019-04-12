@@ -2,6 +2,72 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void handle_CMP(struct cpu *cpu)
+{
+  unsigned char regA, regB;
+  regA = cpu_ram_pc(cpu);
+  regB = cpu_ram_read(cpu, cpu->pc + 1);
+  if (regA == regB)
+  {
+    // regB is equal to regB
+    cpu->FL = cpu->FL & CMP_E_MASK;
+  }
+  else if (regA < regB)
+  {
+    cpu->FL = cpu->FL & CMP_L_MASK;
+  }
+  else if (regA > regB)
+  {
+    cpu->FL = cpu->FL & CMP_G_MASK;
+  }
+#ifdef DEBUG
+  printf("based on regA: %u and regB %u the cmp is set to %u\n", regA, regB, cpu->FL);
+#endif
+}
+
+void handle_JEQ(struct cpu *cpu)
+{
+  if (cpu->FL == CMP_E_MASK)
+  {
+#ifdef DEBUG
+    printf("Was equal. Jumping to: %u\n", cpu_ram_pc(cpu));
+#endif
+    cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
+  }
+  else
+  {
+#ifdef DEBUG
+    printf("Was not equal. Continuing to: %u", cpu->pc + 2);
+#endif
+  }
+}
+
+void handle_JNE(struct cpu *cpu)
+{
+  if (cpu->FL & CMP_E_MASK == 0)
+  {
+#ifdef DEBUG
+    printf("Was not equal. Jumping to: %u\n", cpu_ram_pc(cpu));
+#endif
+    cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
+  }
+  else
+  {
+#ifdef DEBUG
+    printf("Was equal. Continuing to: %u", cpu->pc + 2);
+#endif
+  }
+}
+
+void handle_JMP(struct cpu *cpu)
+{
+  unsigned char jmp_address = cpu_register_read(cpu, cpu_ram_pc(cpu));
+#ifdef DEBUG
+  printf("JMP Jumping to: %u\n", jmp_address);
+#endif
+  cpu->pc = jmp_address;
+}
+
 void handle_LDI(struct cpu *cpu)
 {
   /* LDI reg int */
@@ -184,7 +250,7 @@ void cpu_run(struct cpu *cpu)
     cur_ins = cpu_ram_read(cpu, cpu->pc++);
     // 2. Figure out how many operands this next instruction requires
     unsigned int num_ops = cur_ins >> 6;
-    // unsigned char uses_ALU = cur_ins & ALU_MASK >> 5;
+    unsigned char uses_ALU = cur_ins & ALU_MASK;
     unsigned char affects_PC = cur_ins & PC_MASK;
     // unsigned char op_id = cur_ins & OP_ID_MASK;
     // 3. Get the appropriate value(s) of the operands following this instruction
@@ -232,6 +298,20 @@ void cpu_run(struct cpu *cpu)
       // printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
       break;
 
+    case CMP:
+      handle_CMP(cpu);
+      break;
+
+    case JEQ:
+      handle_JEQ(cpu);
+      break;
+    case JNE:
+      handle_JNE(cpu);
+      break;
+    case JMP:
+      handle_JMP(cpu);
+      break;
+
     default:
       printf("Invalid instruction: %u\n", cur_ins);
       num_err++;
@@ -259,6 +339,7 @@ void cpu_init(struct cpu *cpu)
   cpu->pc = 0;
   // cpu->reg[7] = MEM_SIZE - 12; // this is where the stack pointer is supposed to live
   cpu->reg[7] = sizeof(cpu->ram) / sizeof(cpu->ram[0]) - 12; // SP_START;
+  cpu->FL = 0;
   // cpu->sp = &cpu->reg[7]; // reference to stack pointer register address
 }
 

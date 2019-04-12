@@ -17,6 +17,7 @@ struct cpu {
   // registers (array)
   unsigned char reg[8];
   unsigned char sp;
+  unsigned char FL;
   // ram (array)
   unsigned char ram[MEM_SIZE];
   unsigned char PROGRAM_SIZE;
@@ -27,9 +28,15 @@ struct cpu {
 
 // These use binary literals. If these aren't available with your compiler, hex
 // literals should be used.
+
 #define ALU_MASK   0b00100000
 #define PC_MASK    0b00010000
 #define OP_ID_MASK 0b00001111
+
+
+#define CMP_L_MASK 0b00000100
+#define CMP_G_MASK 0b00000010
+#define CMP_E_MASK 0b00000001
 
 #define LDI  0b10000010
 #define HLT  0b00000001
